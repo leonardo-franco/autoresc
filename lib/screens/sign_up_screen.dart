@@ -1,4 +1,8 @@
+// ignore_for_file: library_private_types_in_public_api, unused_local_variable, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import '../utils/validators.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -19,16 +23,68 @@ class _SignupScreenState extends State<SignupScreen> {
   
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false; // Adiciona uma variável para o estado de loading
 
-  FocusNode _surnameFocusNode = FocusNode();
-  FocusNode _emailFocusNode = FocusNode();
-  FocusNode _passwordFocusNode = FocusNode();
-  FocusNode _confirmPasswordFocusNode = FocusNode();
+  final FocusNode _surnameFocusNode = FocusNode();
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+  final FocusNode _confirmPasswordFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     // Inicialize os FocusNodes se necessário
+  }
+
+  Future<void> _register() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+
+        // Aqui você pode adicionar mais informações ao perfil do usuário, se necessário
+        // await userCredential.user!.updateProfile(displayName: _nameController.text);
+
+        Fluttertoast.showToast(
+          msg: "Cadastro realizado com sucesso!",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+
+        Navigator.pop(context); // Redireciona para a tela de login
+      } on FirebaseAuthException catch (e) {
+        String errorMessage = "Erro desconhecido";
+        if (e.code == 'weak-password') {
+          errorMessage = 'A senha fornecida é muito fraca.';
+        } else if (e.code == 'email-already-in-use') {
+          errorMessage = 'Já existe uma conta com esse e-mail.';
+        } else if (e.code == 'invalid-email') {
+          errorMessage = 'O e-mail fornecido é inválido.';
+        }
+        
+        Fluttertoast.showToast(
+          msg: errorMessage,
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -176,12 +232,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        // Lógica de cadastro
-                        // Pode ser um método que lida com o cadastro usando o AuthProvider
-                      }
-                    },
+                    onPressed: _isLoading ? null : _register, // Desativa o botão durante o loading
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       backgroundColor: Colors.black,
@@ -189,10 +240,12 @@ class _SignupScreenState extends State<SignupScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
-                      'Cadastrar',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator() // Mostra o loading se estiver em andamento
+                        : const Text(
+                            'Cadastrar',
+                            style: TextStyle(color: Colors.white),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),

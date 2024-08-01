@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "460045909235",
+    "project_id": "autoresc-b0307",
+    "storage_bucket": "autoresc-b0307.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:460045909235:android:b6d65959cab9d2ac8c0b86",
+        "android_client_info": {
+          "package_name": "com.example.autoresc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8LUk3FXyBnvmFL0U26GLtn5o6EbGvk6E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
