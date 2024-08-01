@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, unused_local_variable
+// ignore_for_file: unused_local_variable
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,6 +23,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   bool _isPasswordFocused = false; // Controle se o indicador deve ser exibido
+  bool _acceptedTerms = false; // Controle do checkbox de termos e condições
 
   @override
   void dispose() {
@@ -55,7 +56,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _signUp() async {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState!.validate() && _acceptedTerms) {
       setState(() {
         _isLoading = true;
       });
@@ -88,6 +89,14 @@ class _SignupScreenState extends State<SignupScreen> {
           _isLoading = false;
         });
       }
+    } else {
+      Fluttertoast.showToast(
+        msg: "Você deve aceitar os termos e permissões.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
     }
   }
 
@@ -243,6 +252,31 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                   validator: (value) => value != _passwordController.text ? 'Senhas não conferem' : null,
+                ),
+                const SizedBox(height: 20),
+                // Checkbox de Termos e Condições
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _acceptedTerms,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          _acceptedTerms = value ?? false;
+                        });
+                      },
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          // Aqui você pode adicionar a navegação para a tela de termos e condições
+                        },
+                        child: const Text(
+                          'Aceito os termos e condições',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
                 // Botão de Cadastro
