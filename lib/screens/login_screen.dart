@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_font_icons/flutter_font_icons.dart'; // Importa a biblioteca de ícones
-import 'sign_up_screen.dart';
+import 'sign_up_screen.dart'; // Importe a tela de cadastro
+import 'forgot_password_screen.dart'; // Importe a tela de recuperação de senha (a ser criada)
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -212,6 +213,25 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 20),
+                    // Texto de Recuperação de Senha
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen(), // Navegue para a tela de recuperação de senha
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Esqueceu a senha?',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 ),
