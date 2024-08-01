@@ -1,8 +1,4 @@
-// ignore_for_file: unused_local_variable
-
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'sign_up_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -31,39 +27,18 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      // Lógica de login aqui...
+
+      // Exemplo de mensagem de sucesso
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Login realizado com sucesso!")),
       );
 
-      Fluttertoast.showToast(
-        msg: "Login realizado com sucesso!",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-      );
-
-      // Navegue para outra tela se necessário
-      // Navigator.pushReplacementNamed(context, '/home');
-    } on FirebaseAuthException catch (e) {
-      String errorMessage = "Erro desconhecido";
-      if (e.code == 'user-not-found') {
-        errorMessage = 'Nenhum usuário encontrado com esse e-mail.';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'Senha incorreta.';
-      } else if (e.code == 'invalid-email') {
-        errorMessage = 'O e-mail fornecido é inválido.';
-      }
-
-      Fluttertoast.showToast(
-        msg: errorMessage,
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
+      // Navegue para a próxima tela se necessário
+    } catch (e) {
+      // Exemplo de mensagem de erro
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erro: $e")),
       );
     } finally {
       setState(() {
@@ -79,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           // Cabeçalho fixo com o logo
           Container(
-            height: 200,  // Defina a altura que preferir
+            height: 200,
             decoration: const BoxDecoration(
               color: Colors.black,
               borderRadius: BorderRadius.only(
@@ -95,7 +70,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          // Resto do conteúdo que pode ser rolado se necessário
           Expanded(
             child: SingleChildScrollView(
               child: Padding(
@@ -170,7 +144,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const SignupScreen()),
+                              PageRouteBuilder(
+                                pageBuilder: (context, animation, secondaryAnimation) => const SignupScreen(),
+                                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                  const begin = Offset(1.0, 0.0);
+                                  const end = Offset.zero;
+                                  const curve = Curves.easeInOut;
+                                  var tween = Tween(begin: begin, end: end);
+                                  var offsetAnimation = animation.drive(tween.chain(CurveTween(curve: curve)));
+                                  return SlideTransition(position: offsetAnimation, child: child);
+                                },
+                              ),
                             );
                           },
                           child: const Text(

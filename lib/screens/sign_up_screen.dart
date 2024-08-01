@@ -1,9 +1,8 @@
-// ignore_for_file: library_private_types_in_public_api, unused_local_variable, use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, unused_local_variable
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import '../utils/validators.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -20,23 +19,42 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
-  
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _isLoading = false; // Adiciona uma variável para o estado de loading
-
-  final FocusNode _surnameFocusNode = FocusNode();
-  final FocusNode _emailFocusNode = FocusNode();
-  final FocusNode _passwordFocusNode = FocusNode();
-  final FocusNode _confirmPasswordFocusNode = FocusNode();
+  bool _isLoading = false;
+  bool _isPasswordFocused = false; // Controle se o indicador deve ser exibido
 
   @override
-  void initState() {
-    super.initState();
-    // Inicialize os FocusNodes se necessário
+  void dispose() {
+    _nameController.dispose();
+    _surnameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
-  Future<void> _register() async {
+  int _calculatePasswordStrength(String password) {
+    int strength = 0;
+    if (password.length >= 6) strength += 20;
+    if (RegExp(r'[A-Z]').hasMatch(password)) strength += 20;
+    if (RegExp(r'[0-9]').hasMatch(password)) strength += 20;
+    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) strength += 20;
+    if (password.length >= 12) strength += 20;
+    return strength;
+  }
+
+  String _getStrengthText(int strength) {
+    if (strength < 40) {
+      return 'Fraca';
+    } else if (strength < 80) {
+      return 'Moderada';
+    } else {
+      return 'Forte';
+    }
+  }
+
+  Future<void> _signUp() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
@@ -44,38 +62,24 @@ class _SignupScreenState extends State<SignupScreen> {
 
       try {
         UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
         );
-
-        // Aqui você pode adicionar mais informações ao perfil do usuário, se necessário
-        // await userCredential.user!.updateProfile(displayName: _nameController.text);
 
         Fluttertoast.showToast(
           msg: "Cadastro realizado com sucesso!",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
 
-        Navigator.pop(context); // Redireciona para a tela de login
+        Navigator.pop(context);
       } on FirebaseAuthException catch (e) {
-        String errorMessage = "Erro desconhecido";
-        if (e.code == 'weak-password') {
-          errorMessage = 'A senha fornecida é muito fraca.';
-        } else if (e.code == 'email-already-in-use') {
-          errorMessage = 'Já existe uma conta com esse e-mail.';
-        } else if (e.code == 'invalid-email') {
-          errorMessage = 'O e-mail fornecido é inválido.';
-        }
-        
         Fluttertoast.showToast(
-          msg: errorMessage,
+          msg: e.message ?? "Erro ao cadastrar usuário.",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
           backgroundColor: Colors.red,
           textColor: Colors.white,
         );
@@ -123,7 +127,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   textInputAction: TextInputAction.next,
                   onFieldSubmitted: (_) {
-                    FocusScope.of(context).requestFocus(_surnameFocusNode);
+                    FocusScope.of(context).requestFocus(FocusNode());
                   },
                   validator: (value) => value!.isEmpty ? 'Nome é obrigatório' : null,
                 ),
@@ -131,7 +135,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 // Campo de Sobrenome
                 TextFormField(
                   controller: _surnameController,
-                  focusNode: _surnameFocusNode,
                   decoration: InputDecoration(
                     labelText: 'Sobrenome',
                     border: OutlineInputBorder(
@@ -141,7 +144,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   textInputAction: TextInputAction.next,
                   onFieldSubmitted: (_) {
-                    FocusScope.of(context).requestFocus(_emailFocusNode);
+                    FocusScope.of(context).requestFocus(FocusNode());
                   },
                   validator: (value) => value!.isEmpty ? 'Sobrenome é obrigatório' : null,
                 ),
@@ -149,7 +152,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 // Campo de Email
                 TextFormField(
                   controller: _emailController,
-                  focusNode: _emailFocusNode,
                   decoration: InputDecoration(
                     labelText: 'Email',
                     border: OutlineInputBorder(
@@ -160,9 +162,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   onFieldSubmitted: (_) {
-                    FocusScope.of(context).requestFocus(_passwordFocusNode);
+                    FocusScope.of(context).requestFocus(FocusNode());
                   },
-                  validator: validateEmail,
+                  validator: (value) => value!.isEmpty || !RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$').hasMatch(value) ? 'Email inválido' : null,
                 ),
                 const SizedBox(height: 20),
                 // Campo de Senha
@@ -186,20 +188,45 @@ class _SignupScreenState extends State<SignupScreen> {
                       },
                     ),
                   ),
-                  focusNode: _passwordFocusNode,
-                  textInputAction: TextInputAction.next,
-                  onFieldSubmitted: (_) {
-                    FocusScope.of(context).requestFocus(_confirmPasswordFocusNode);
+                  validator: (value) => value!.isEmpty || value.length < 6 ? 'Senha deve ter pelo menos 6 caracteres' : null,
+                  onChanged: (value) {
+                    setState(() {
+                      _isPasswordFocused = value.isNotEmpty;
+                    });
                   },
-                  validator: validatePassword,
                 ),
+                const SizedBox(height: 10),
+                // Indicador de Força da Senha (exibido apenas se o usuário começar a digitar)
+                if (_isPasswordFocused) ...[
+                  LinearProgressIndicator(
+                    value: _calculatePasswordStrength(_passwordController.text) / 100,
+                    color: _calculatePasswordStrength(_passwordController.text) < 40
+                        ? Colors.red
+                        : (_calculatePasswordStrength(_passwordController.text) < 80
+                            ? Colors.orange
+                            : Colors.green),
+                    backgroundColor: Colors.grey[200],
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    _getStrengthText(_calculatePasswordStrength(_passwordController.text)),
+                    style: TextStyle(
+                      color: _calculatePasswordStrength(_passwordController.text) < 40
+                          ? Colors.red
+                          : (_calculatePasswordStrength(_passwordController.text) < 80
+                              ? Colors.orange
+                              : Colors.green),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 20),
                 // Campo de Confirmar Senha
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
-                    labelText: 'Confirme a senha',
+                    labelText: 'Confirmar Senha',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -215,24 +242,14 @@ class _SignupScreenState extends State<SignupScreen> {
                       },
                     ),
                   ),
-                  focusNode: _confirmPasswordFocusNode,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) {
-                    FocusScope.of(context).unfocus(); // Remove o foco do campo quando a entrada está completa
-                  },
-                  validator: (value) {
-                    if (value != _passwordController.text) {
-                      return 'As senhas não coincidem';
-                    }
-                    return null;
-                  },
+                  validator: (value) => value != _passwordController.text ? 'Senhas não conferem' : null,
                 ),
                 const SizedBox(height: 20),
                 // Botão de Cadastro
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _register, // Desativa o botão durante o loading
+                    onPressed: _isLoading ? null : _signUp,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       backgroundColor: Colors.black,
@@ -241,32 +258,12 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     child: _isLoading
-                        ? const CircularProgressIndicator() // Mostra o loading se estiver em andamento
+                        ? const CircularProgressIndicator()
                         : const Text(
                             'Cadastrar',
                             style: TextStyle(color: Colors.white),
                           ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                // Texto para voltar ao Login
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Já tem uma conta? '),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'Fazer login',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -274,19 +271,5 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _surnameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    _surnameFocusNode.dispose();
-    _emailFocusNode.dispose();
-    _passwordFocusNode.dispose();
-    _confirmPasswordFocusNode.dispose();
-    super.dispose();
   }
 }
