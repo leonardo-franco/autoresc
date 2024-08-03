@@ -1,7 +1,11 @@
+// ignore_for_file: unused_local_variable, use_build_context_synchronously, library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
-import 'package:flutter_font_icons/flutter_font_icons.dart'; // Importa a biblioteca de ícones
-import 'sign_up_screen.dart'; // Importe a tela de cadastro
-import 'forgot_password_screen.dart'; // Importe a tela de recuperação de senha (a ser criada)
+import 'package:flutter_font_icons/flutter_font_icons.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Importa o FirebaseAuth
+import 'sign_up_screen.dart';
+import 'forgot_password_screen.dart';
+import 'home_screen.dart'; // Importe a tela inicial
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,18 +33,36 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Lógica de login aqui...
-
-      // Exemplo de mensagem de sucesso
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Login realizado com sucesso!")),
+      // Autenticar com Firebase usando email e senha
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
 
-      // Navegue para a próxima tela se necessário
-    } catch (e) {
-      // Exemplo de mensagem de erro
+      // Navegar para a HomeScreen se o login for bem-sucedido
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const HomeScreen(),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+
+      if (e.code == 'user-not-found') {
+        errorMessage = 'Usuário não encontrado. Verifique seu email.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Senha incorreta. Tente novamente.';
+      } else {
+        errorMessage = 'Erro ao realizar login: ${e.message}';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro: $e")),
+        SnackBar(content: Text(errorMessage)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro inesperado: $e')),
       );
     } finally {
       setState(() {
@@ -146,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         // Google
                         IconButton(
-                          icon: Icon(
+                          icon: const Icon(
                             FontAwesome.google, // Ícone do Google
                             size: 40,
                             color: Colors.red,
@@ -158,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(width: 20),
                         // Apple
                         IconButton(
-                          icon: Icon(
+                          icon: const Icon(
                             FontAwesome.apple, // Ícone da Apple
                             size: 40,
                             color: Colors.black,
@@ -170,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(width: 20),
                         // Facebook
                         IconButton(
-                          icon: Icon(
+                          icon: const Icon(
                             FontAwesome.facebook, // Ícone do Facebook
                             size: 40,
                             color: Colors.blue,
