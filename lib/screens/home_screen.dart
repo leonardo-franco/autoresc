@@ -225,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Padding(
                             padding: EdgeInsets.all(16.0),
                             child: Text(
-                              'Empresas de Guincho',
+                              'Empresas de Guincho Perto de Você',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,

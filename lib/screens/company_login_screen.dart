@@ -1,5 +1,6 @@
-// ignore_for_file: library_private_types_in_public_api, unused_local_variable
+// ignore_for_file: library_private_types_in_public_api, unused_local_variable, use_build_context_synchronously
 
+import 'package:autoresc/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_font_icons/flutter_font_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,19 +9,19 @@ import 'forgot_password_screen.dart';
 import 'home_screen.dart';
 import 'company_login_screen.dart'; // Importe a tela de login da empresa
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class CompanyLoginScreen extends StatefulWidget {
+  const CompanyLoginScreen({super.key});
 
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _CompanyLoginScreenState createState() => _CompanyLoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
-  bool _isUser = true; // Variável para controlar o estado do toggle
+  bool _isUser = false; // Variável para controlar o estado do toggle
 
   @override
   void dispose() {
@@ -123,6 +124,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                   setState(() {
                                     _isUser = true;
                                   });
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const LoginScreen(),
+                                    ),
+                                  );
                                 },
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
@@ -231,48 +238,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(color: Colors.white),
                               ),
                       ),
-                    ),
-                    const SizedBox(height: 50),
-                    // Ícones de login social
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Google
-                        IconButton(
-                          icon: const Icon(
-                            FontAwesome.google, // Ícone do Google
-                            size: 40,
-                            color: Colors.red,
-                          ),
-                          onPressed: () {
-                            // Implementar a lógica para login com Google
-                          },
-                        ),
-                        const SizedBox(width: 20),
-                        // Apple
-                        IconButton(
-                          icon: const Icon(
-                            FontAwesome.apple, // Ícone da Apple
-                            size: 40,
-                            color: Colors.black,
-                          ),
-                          onPressed: () {
-                            // Implementar a lógica para login com Apple
-                          },
-                        ),
-                        const SizedBox(width: 20),
-                        // Facebook
-                        IconButton(
-                          icon: const Icon(
-                            FontAwesome.facebook, // Ícone do Facebook
-                            size: 40,
-                            color: Colors.blue,
-                          ),
-                          onPressed: () {
-                            // Implementar a lógica para login com Facebook
-                          },
-                        ),
-                      ],
                     ),
                     const SizedBox(height: 20),
                     // Texto de Cadastro
