@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
@@ -227,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Text(
                               'Empresas de Guincho Perto de Você',
                               style: TextStyle(
-                                fontSize: 24,
+                                fontSize: 19,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

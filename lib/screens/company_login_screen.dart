@@ -1,13 +1,14 @@
 // ignore_for_file: library_private_types_in_public_api, unused_local_variable, use_build_context_synchronously
 
+import 'package:autoresc/screens/company_sign_up_screen.dart';
 import 'package:autoresc/screens/login_screen.dart';
+import 'package:autoresc/screens/select_segment_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_font_icons/flutter_font_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'sign_up_screen.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
-import 'company_login_screen.dart'; // Importe a tela de login da empresa
+// Importe a tela de login da empresa
 
 class CompanyLoginScreen extends StatefulWidget {
   const CompanyLoginScreen({super.key});
@@ -18,10 +19,10 @@ class CompanyLoginScreen extends StatefulWidget {
 
 class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isUser = false; // Variável para controlar o estado do toggle
+  bool _obscurePassword = true;
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   void dispose() {
@@ -35,20 +36,46 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
       _isLoading = true;
     });
 
-    try {
+     try {
       // Autenticar com Firebase usando email e senha
       UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // Navegar para a HomeScreen se o login for bem-sucedido
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-        ),
-      );
+      User? user = userCredential.user;
+      if (user != null) {
+        // Buscar o documento da empresa pelo email
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('companies')
+            .where('email', isEqualTo: user.email)
+            .get();
+
+        if (querySnapshot.docs.isNotEmpty) {
+          DocumentSnapshot companyDoc = querySnapshot.docs.first;
+
+          // Verificar se o campo 'segment' já existe
+          if ((companyDoc.data() as Map<String, dynamic>).containsKey('segment')) {
+            // Navegar para a tela principal se o campo 'segment' já existir
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          } else {
+            // Navegar para a tela de seleção de segmento se o campo 'segment' não existir
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const SelectSegmentScreen()),
+            );
+          }
+        } else {
+          // Documento não encontrado, navegue para a tela de seleção de segmento
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const SelectSegmentScreen()),
+          );
+        }
+      }
     } on FirebaseAuthException catch (e) {
       String errorMessage;
 
@@ -251,7 +278,7 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
                               context,
                               PageRouteBuilder(
                                 pageBuilder: (context, animation, secondaryAnimation) =>
-                                    const SignupScreen(),
+                                    const CompanySignupScreen(),
                                 transitionsBuilder: (context, animation, secondaryAnimation, child) {
                                   const begin = Offset(1.0, 0.0);
                                   const end = Offset.zero;
