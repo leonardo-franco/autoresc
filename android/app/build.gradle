@@ -27,6 +27,9 @@ android {
     namespace = "com.example.autoresc"
     compileSdk = 34  // Atualize conforme a versão do SDK que você está usando
 
+    dependencies {
+        implementation 'com.google.mlkit:text-recognition:16.0.0' // Ou a versão mais recente
+    }
     defaultConfig {
         applicationId = "com.example.autoresc"
         minSdk = 23  // Atualize para 23 ou superior
@@ -38,6 +41,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        resValue "string", "google_maps_key", (project.findProperty("GOOGLE_MAPS_API_KEY") ?: "")
     }
 
     compileOptions {

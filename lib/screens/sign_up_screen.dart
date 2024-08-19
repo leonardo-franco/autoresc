@@ -1,5 +1,3 @@
-// ignore_for_file: unused_local_variable, library_private_types_in_public_api, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -22,8 +20,8 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
-  bool _isPasswordFocused = false; // Controle se o indicador deve ser exibido
-  bool _acceptedTerms = false; // Controle do checkbox de termos e condições
+  bool _isPasswordFocused = false;
+  bool _acceptedTerms = false;
 
   @override
   void dispose() {
@@ -62,19 +60,30 @@ class _SignupScreenState extends State<SignupScreen> {
       });
 
       try {
+        // Criação do usuário
         UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        Fluttertoast.showToast(
-          msg: "Cadastro realizado com sucesso!",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-        );
+        // Enviar e-mail de verificação
+        User? user = FirebaseAuth.instance.currentUser;
+        if (user != null && !user.emailVerified) {
+          await user.sendEmailVerification();
 
+          Fluttertoast.showToast(
+            msg: "Um link de verificação foi enviado para seu e-mail. Por favor, verifique-o.",
+            toastLength: Toast.LENGTH_LONG,
+            gravity: ToastGravity.CENTER,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+          );
+
+          // Desloga o usuário para que só possa logar após verificar o e-mail
+          await FirebaseAuth.instance.signOut();
+        }
+
+        // Redirecionar ou fazer outra ação necessária
         Navigator.pop(context);
       } on FirebaseAuthException catch (e) {
         Fluttertoast.showToast(
@@ -135,9 +144,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     prefixIcon: const Icon(Icons.person),
                   ),
                   textInputAction: TextInputAction.next,
-                  onFieldSubmitted: (_) {
-                    FocusScope.of(context).requestFocus(FocusNode());
-                  },
                   validator: (value) => value!.isEmpty ? 'Nome é obrigatório' : null,
                 ),
                 const SizedBox(height: 20),
@@ -152,9 +158,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     prefixIcon: const Icon(Icons.person),
                   ),
                   textInputAction: TextInputAction.next,
-                  onFieldSubmitted: (_) {
-                    FocusScope.of(context).requestFocus(FocusNode());
-                  },
                   validator: (value) => value!.isEmpty ? 'Sobrenome é obrigatório' : null,
                 ),
                 const SizedBox(height: 20),
@@ -170,9 +173,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  onFieldSubmitted: (_) {
-                    FocusScope.of(context).requestFocus(FocusNode());
-                  },
                   validator: (value) => value!.isEmpty || !RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$').hasMatch(value) ? 'Email inválido' : null,
                 ),
                 const SizedBox(height: 20),
@@ -280,25 +280,25 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 20),
                 // Botão de Cadastro
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _signUp,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      backgroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _signUp,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator()
-                        : const Text(
-                            'Cadastrar',
-                            style: TextStyle(color: Colors.white),
-                          ),
+                    padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
                   ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        )
+                      : const Text(
+                          'Cadastrar',
+                          style: TextStyle(fontSize: 18, color: Colors.white),
+                        ),
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           ),

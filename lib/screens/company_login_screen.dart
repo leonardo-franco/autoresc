@@ -1,5 +1,3 @@
-// ignore_for_file: library_private_types_in_public_api, unused_local_variable, use_build_context_synchronously
-
 import 'package:autoresc/screens/company_sign_up_screen.dart';
 import 'package:autoresc/screens/login_screen.dart';
 import 'package:autoresc/screens/select_segment_screen.dart';
@@ -8,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
-// Importe a tela de login da empresa
 
 class CompanyLoginScreen extends StatefulWidget {
   const CompanyLoginScreen({super.key});
@@ -19,10 +16,15 @@ class CompanyLoginScreen extends StatefulWidget {
 
 class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _isUser = false; // Variável para controlar o estado do toggle
   bool _obscurePassword = true;
-  final TextEditingController _passwordController = TextEditingController();
+
+  // Variáveis de controle para erros
+  bool _isEmailInvalid = false;
+  bool _isPasswordInvalid = false;
+  String _errorMessage = '';
 
   @override
   void dispose() {
@@ -34,9 +36,12 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
   Future<void> _login() async {
     setState(() {
       _isLoading = true;
+      _isEmailInvalid = false;
+      _isPasswordInvalid = false;
+      _errorMessage = '';
     });
 
-     try {
+    try {
       // Autenticar com Firebase usando email e senha
       UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
@@ -77,23 +82,15 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
         }
       }
     } on FirebaseAuthException catch (e) {
-      String errorMessage;
-
-      if (e.code == 'user-not-found') {
-        errorMessage = 'Usuário não encontrado. Verifique seu email.';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'Senha incorreta. Tente novamente.';
-      } else {
-        errorMessage = 'Erro ao realizar login: ${e.message}';
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      setState(() {
+        _errorMessage = 'Dados inválidos';
+        _isEmailInvalid = true;
+        _isPasswordInvalid = true;
+      });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro inesperado: $e')),
-      );
+      setState(() {
+        _errorMessage = 'Erro inesperado: $e';
+      });
     } finally {
       setState(() {
         _isLoading = false;
@@ -118,7 +115,7 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
             ),
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.only(left: 30.0), // Adiciona um padding se necessário
+                padding: const EdgeInsets.only(left: 45.0), // Adiciona um padding se necessário
                 child: Image.asset(
                   'assets/logo.png', // Caminho para o logo
                   width: 250, // Ajuste o tamanho conforme necessário
@@ -135,6 +132,7 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 30),
+
                     // Toggle entre "Sou Usuário" e "Sou Empresa"
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -160,8 +158,7 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
                                 },
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 10, horizontal: 20),
+                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                                   decoration: BoxDecoration(
                                     color: _isUser ? Colors.black : Colors.transparent,
                                     borderRadius: BorderRadius.circular(30),
@@ -189,8 +186,7 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
                                 },
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 10, horizontal: 20),
+                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                                   decoration: BoxDecoration(
                                     color: !_isUser ? Colors.black : Colors.transparent,
                                     borderRadius: BorderRadius.circular(30),
@@ -210,27 +206,37 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
                       ],
                     ),
                     const SizedBox(height: 50),
+
                     // Campo de Email
                     TextField(
                       controller: _emailController,
                       decoration: InputDecoration(
                         labelText: 'Email',
+                        errorText: _isEmailInvalid ? 'Dados inválidos' : null,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: _isEmailInvalid ? Colors.red : Colors.grey,
+                          ),
                         ),
                         prefixIcon: const Icon(Icons.email),
                       ),
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 30),
+
                     // Campo de Senha
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Senha',
+                        errorText: _isPasswordInvalid ? 'Dados inválidos' : null,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: _isPasswordInvalid ? Colors.red : Colors.grey,
+                          ),
                         ),
                         prefixIcon: const Icon(Icons.lock),
                         suffixIcon: IconButton(
@@ -246,6 +252,7 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 30),
+
                     // Botão de Login
                     SizedBox(
                       width: double.infinity,
@@ -301,26 +308,25 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    // Texto de Recuperação de Senha
+                    const SizedBox(height: 10),
+
+                    // Esqueceu a senha
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const ForgotPasswordScreen(), // Navegue para a tela de recuperação de senha
-                          ),
+                          MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
                         );
                       },
                       child: const Text(
-                        'Esqueceu a senha?',
+                        'Esqueceu sua senha?',
                         style: TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),

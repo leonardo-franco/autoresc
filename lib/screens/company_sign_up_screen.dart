@@ -1,6 +1,5 @@
-// ignore_for_file: unused_local_variable
+// ignore_for_file: deprecated_member_use
 
-import 'package:autoresc/screens/terms_conditions_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,6 +8,25 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:mailer/mailer.dart';
+import 'package:mailer/src/entities/message.dart' as MailerMessage;
+// ignore: depend_on_referenced_packages
+// ignore: depend_on_referenced_packages
+import 'package:mailer/smtp_server.dart';
+
+// ignore: camel_case_types
+class TermsConditionsScreen extends StatelessWidget {
+  const TermsConditionsScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Termos e Condições')),
+      body: Center(child: const Text('Exibir os termos e condições aqui')),
+    );
+  }
+}
 
 bool validateCNPJ(String cnpj) {
   // Remove caracteres não numéricos
@@ -109,6 +127,45 @@ class _CompanySignupScreenState extends State<CompanySignupScreen> {
     }
   }
 
+  Future<bool> _isCnhImage(File? imageFile) async {
+    if (imageFile == null) return false;
+
+    final inputImage = InputImage.fromFile(imageFile);
+    final textDetector = GoogleMlKit.vision.textRecognizer();
+    final RecognizedText recognisedText = await textDetector.processImage(inputImage);
+
+    // Procura por palavras-chave que indiquem que é uma CNH
+    final String text = recognisedText.text.toLowerCase();
+    if (text.contains('carteira nacional de habilitação') ||
+        text.contains('cnh') ||
+        text.contains('registro') ||
+        text.contains('categoria') ||
+        text.contains('validade')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  Future<void> _sendEmail(File? imageFile) async {
+    final smtpServer = gmail('leonardoflima14@gmail.com', 'esza wchn obji wshr');
+    // Substitua 'seu_email@gmail.com' e 'sua_senha' pelas credenciais do seu email.
+
+    final message = MailerMessage.Message()
+    ..from = const Address('leonardoflima14@gmail.com', 'CNH Verification')
+    ..recipients.add('leonardoflima14@gmail.com')
+    ..subject = 'Verificação de Imagem CNH'
+    ..text = 'A imagem enviada não parece ser uma CNH válida.'
+    ..attachments.add(FileAttachment(imageFile!));
+
+    try {
+      final sendReport = await send(message, smtpServer);
+      print('Message sent: ' + sendReport.toString());
+    } on MailerException catch (e) {
+      print('Error sending email: ${e.toString()}');
+    }
+  }
+
   Future<void> _signUp() async {
     if (_formKey.currentState!.validate() && _acceptedTerms) {
       setState(() {
@@ -116,6 +173,14 @@ class _CompanySignupScreenState extends State<CompanySignupScreen> {
       });
 
       try {
+        if (_selectedImage != null) {
+          final isCnh = await _isCnhImage(_selectedImage);
+          if (!isCnh) {
+            await _sendEmail(_selectedImage);
+            throw Exception('A imagem enviada não parece ser uma CNH válida. Um email foi enviado para verificação.');
+          }
+        }
+
         UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
@@ -128,7 +193,7 @@ class _CompanySignupScreenState extends State<CompanySignupScreen> {
           'address': _addressController.text.trim(),
           'phone': _phoneController.text.trim(),
           'email': _emailController.text.trim(),
-          'licenseUrl': '',  // Inicialize com string vazia
+          'licenseUrl': '', // Inicialize com string vazia
         });
 
         // Atualizar o companyData com o ID do documento
@@ -139,7 +204,7 @@ class _CompanySignupScreenState extends State<CompanySignupScreen> {
           'address': _addressController.text.trim(),
           'phone': _phoneController.text.trim(),
           'email': _emailController.text.trim(),
-          'licenseUrl': '',  // Inicialize com string vazia
+          'licenseUrl': '', // Inicialize com string vazia
         };
 
         // Fazer o upload da imagem e atualizar o Firestore com a URL
@@ -157,6 +222,14 @@ class _CompanySignupScreenState extends State<CompanySignupScreen> {
       } on FirebaseAuthException catch (e) {
         Fluttertoast.showToast(
           msg: e.message ?? "Erro ao cadastrar usuário.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      } catch (e) {
+        Fluttertoast.showToast(
+          msg: e.toString(),
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.CENTER,
           backgroundColor: Colors.red,
@@ -376,15 +449,15 @@ class _CompanySignupScreenState extends State<CompanySignupScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const TermsConditionsScreen(),
-                            )
+                              builder: (context) => const TermsConditionsScreen(),
+                            ),
                           );
                         },
                         child: const Text(
                           'Termos e condições',
                           style: TextStyle(
                             color: Colors.blue,
-                            decoration: TextDecoration.underline
+                            decoration: TextDecoration.underline,
                           ),
                         ),
                       ),
@@ -413,12 +486,12 @@ class _CompanySignupScreenState extends State<CompanySignupScreen> {
                     child: _isLoading
                         ? const CircularProgressIndicator()
                         : const Text(
-                            'Cadastrar',
-                            style: TextStyle(color: Colors.white),
-                          ),
+                      'Cadastrar',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 50)
+                const SizedBox(height: 50),
               ],
             ),
           ),

@@ -1,6 +1,6 @@
-// ignore_for_file: library_private_types_in_public_api
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/company_provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,26 +14,21 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isListVisible = false;
   bool _isLoading = false;
 
-  final List<Map<String, String>> _towCompanies = [
-    {
-      'name': 'Guincho A',
-      'price': 'R\$ 200',
-      'responseTime': '30 min',
-      'rating': '4.5'
-    },
-    {
-      'name': 'Guincho B',
-      'price': 'R\$ 180',
-      'responseTime': '45 min',
-      'rating': '4.0'
-    },
-    {
-      'name': 'Guincho C',
-      'price': 'R\$ 220',
-      'responseTime': '20 min',
-      'rating': '4.8'
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadCompanyNames();
+  }
+  
+  Future<void> _loadCompanyNames() async {
+    setState(() {
+      _isLoading = true;
+    });
+    await Provider.of<CompanyProvider>(context, listen: false).fetchCompanyNames();
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
   void _toggleListVisibility() {
     setState(() {
@@ -52,7 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _isLoading = true;
     });
 
-    // Simular um carregamento de 1 segundo
     await Future.delayed(const Duration(seconds: 1));
 
     setState(() {
@@ -92,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Fechar o diálogo
+                  Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
@@ -111,6 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final companyNames = Provider.of<CompanyProvider>(context).companyNames;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
@@ -229,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Text(
                               'Empresas de Guincho Perto de Você',
                               style: TextStyle(
-                                fontSize: 19,
+                                fontSize: 15.0,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -244,9 +240,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: AnimationLimiter(
                           child: ListView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: _towCompanies.length,
+                            itemCount: companyNames.length,
                             itemBuilder: (context, index) {
-                              final company = _towCompanies[index];
+                              final companyName = companyNames[index];
+                              final price = 'R\$ ${(180 + index * 10).toStringAsFixed(2)}';
+                              final responseTime = '${20 + index * 5} min';
+                              final rating = (4.8 + index * 0.1).toStringAsFixed(1);
+
                               return AnimationConfiguration.staggeredList(
                                 position: index,
                                 duration: const Duration(milliseconds: 375),
@@ -261,17 +261,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       child: ListTile(
                                         contentPadding: const EdgeInsets.all(16),
-                                        title: Text(company['name']!),
+                                        title: Text(companyName),
                                         subtitle: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text('Preço Médio: ${company['price']}'),
-                                            Text('Tempo de Resposta: ${company['responseTime']}'),
-                                            Text('Avaliação: ${company['rating']}'),
+                                            Text('Preço Médio: $price'),
+                                            Text('Tempo de Resposta: $responseTime'),
+                                            Text('Avaliação: $rating'),
                                           ],
                                         ),
                                         trailing: ElevatedButton.icon(
-                                          onPressed: () => _requestService(company['name']!),
+                                          onPressed: () => _requestService(companyName),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.blue,
                                             shape: RoundedRectangleBorder(

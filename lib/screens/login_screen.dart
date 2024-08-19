@@ -1,5 +1,3 @@
-// ignore_for_file: library_private_types_in_public_api, unused_local_variable, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:flutter_font_icons/flutter_font_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,6 +20,9 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _isUser = true; // Variável para controlar o estado do toggle
 
+  // Variáveis para controlar o erro de login
+  bool _hasLoginError = false;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -32,6 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     setState(() {
       _isLoading = true;
+      _hasLoginError = false;
     });
 
     try {
@@ -41,14 +43,34 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text.trim(),
       );
 
-      // Navegar para a HomeScreen se o login for bem-sucedido
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-        ),
-      );
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null && !user.emailVerified) {
+        // Se o email não estiver verificado, mostrar uma mensagem e deslogar o usuário
+        await FirebaseAuth.instance.signOut();
+        setState(() {
+          _hasLoginError = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor, verifique seu e-mail antes de fazer login.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else {
+        // Navegar para a HomeScreen se o login for bem-sucedido e o e-mail estiver verificado
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const HomeScreen(),
+          ),
+        );
+      }
     } on FirebaseAuthException catch (e) {
+      setState(() {
+        _hasLoginError = true;
+      });
+
       String errorMessage;
 
       if (e.code == 'user-not-found') {
@@ -59,10 +81,14 @@ class _LoginScreenState extends State<LoginScreen> {
         errorMessage = 'Erro ao realizar login: ${e.message}';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text(errorMessage)),
+      // );
     } catch (e) {
+      setState(() {
+        _hasLoginError = true;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro inesperado: $e')),
       );
@@ -90,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.only(left: 30.0), // Adiciona um padding se necessário
+                padding: const EdgeInsets.only(left: 45.0), // Adiciona um padding se necessário
                 child: Image.asset(
                   'assets/logo.png', // Caminho para o logo
                   width: 250, // Ajuste o tamanho conforme necessário
@@ -181,8 +207,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _emailController,
                       decoration: InputDecoration(
                         labelText: 'Email',
+                        errorText: _hasLoginError ? 'Dados inválidos' : null,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: _hasLoginError ? Colors.red : Colors.grey,
+                          ),
                         ),
                         prefixIcon: const Icon(Icons.email),
                       ),
@@ -195,8 +225,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Senha',
+                        errorText: _hasLoginError ? 'Dados inválidos' : null,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: _hasLoginError ? Colors.red : Colors.grey,
+                          ),
                         ),
                         prefixIcon: const Icon(Icons.lock),
                         suffixIcon: IconButton(
